@@ -28,6 +28,9 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("donorNetworkDb").collection("users");
+    const donationRequestsCollection = client
+      .db("donorNetworkDb")
+      .collection("donationRequests");
 
     app.get("/users", async (req, res) => {
       const email = req.query.email;
@@ -61,6 +64,14 @@ async function run() {
       };
 
       const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    // create donation requests api
+
+    app.post("/donation-requests", async (req, res) => {
+      const info = req.body;
+      const result = await donationRequestsCollection.insertOne(info);
       res.send(result);
     });
 
