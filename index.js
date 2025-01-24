@@ -29,10 +29,38 @@ async function run() {
 
     const userCollection = client.db("donorNetworkDb").collection("users");
 
+    app.get("/users", async (req, res) => {
+      const email = req.query.email;
+      console.log(email);
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      console.log(result);
+      res.send(result);
+    });
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       console.log(user);
       const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.patch("/users", async (req, res) => {
+      console.log(req.body);
+      const { name, image, bloodGroup, districtName, upazilaName } = req.body;
+      const email = req.query.email;
+      const filter = { email: email };
+      const updatedDoc = {
+        $set: {
+          name,
+          image,
+          bloodGroup,
+          districtName,
+          upazilaName,
+        },
+      };
+
+      const result = await userCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
 
