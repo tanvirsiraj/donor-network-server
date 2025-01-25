@@ -10,7 +10,7 @@ app.use(express.json());
 
 // database
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.b0m9oyj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -69,9 +69,39 @@ async function run() {
 
     // create donation requests api
 
+    app.get("/donation-requests", async (req, res) => {
+      const status = req.query.status;
+      const query = { status: status };
+      const result = await donationRequestsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/donation-requests/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationRequestsCollection.findOne(query);
+      res.send(result);
+    });
+
     app.post("/donation-requests", async (req, res) => {
       const info = req.body;
       const result = await donationRequestsCollection.insertOne(info);
+      res.send(result);
+    });
+
+    app.patch("/donation-requests/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: "inprogress",
+        },
+      };
+
+      const result = await donationRequestsCollection.updateOne(
+        filter,
+        updatedDoc
+      );
       res.send(result);
     });
 
