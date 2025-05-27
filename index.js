@@ -44,7 +44,7 @@ async function run() {
     app.post("/users", async (req, res) => {
       const user = req.body;
       console.log(user);
-      const result = await userCollection.insertOne(user);
+      const result = await userCollection.insertOne({...user, role: "donor" });
       res.send(result);
     });
 
@@ -66,6 +66,13 @@ async function run() {
       const result = await userCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
+//users
+    app.get("/users", async (req, res) => {
+  const email = req.query.email;
+  const result = await userCollection.findOne({ email });
+  res.send(result);
+});
+
 
     // create donation requests api
 
@@ -75,6 +82,8 @@ async function run() {
       const result = await donationRequestsCollection.find(query).toArray();
       res.send(result);
     });
+
+
 
     app.get("/donation-requests/:id", async (req, res) => {
       const id = req.params.id;
