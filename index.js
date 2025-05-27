@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const port = process.env.PORT || 6000;
+const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors());
@@ -104,6 +104,17 @@ async function run() {
       );
       res.send(result);
     });
+    
+    // Get donation requests by user email
+app.get("/my-donation-requests", async (req, res) => {
+  const email = req.query.email;
+  if (!email) return res.status(400).send({ message: "Email is required" });
+
+  const query = { requesterEmail: email }; // assuming this field exists
+  const result = await donationRequestsCollection.find(query).toArray();
+  res.send(result);
+});
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
