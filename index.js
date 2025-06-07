@@ -34,22 +34,32 @@ async function run() {
 
     app.get("/users", async (req, res) => {
       const email = req.query.email;
-      console.log(email);
       const query = { email: email };
       const result = await userCollection.findOne(query);
-      console.log(result);
       res.send(result);
     });
 
     app.post("/users", async (req, res) => {
       const user = req.body;
-      console.log(user);
       const result = await userCollection.insertOne({...user, role: "donor" });
       res.send(result);
     });
 
+    //  Get all users (for dashboard)
+app.get("/all-users", async (req, res) => {
+  try {
+    const status = req.query.status; // Optional filtering by status
+    const query = status ? { status } : {};
+
+    const result = await userCollection.find(query).toArray();
+    res.send(result);
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
     app.patch("/users", async (req, res) => {
-      console.log(req.body);
       const { name, image, bloodGroup, districtName, upazilaName } = req.body;
       const email = req.query.email;
       const filter = { email: email };
@@ -123,6 +133,44 @@ app.get("/my-donation-requests", async (req, res) => {
   const result = await donationRequestsCollection.find(query).toArray();
   res.send(result);
 });
+
+//user block unblock
+app.patch("/users/:id/status", async (req, res) => {
+  const id = req.params.id;
+  const { status } = req.body; // "active" or "blocked"
+
+  try {
+    const result = await userCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status } }
+    );
+    res.send(result);
+  } catch (error) {
+    console.error("Error updating user status:", error);
+    res.status(500).send({ error: "Failed to update user status" });
+  }
+});
+
+// user role update (volunteer or admin)
+app.patch("/users/:id/role", async (req, res) => {
+  const id = req.params.id;
+  const { role } = req.body; // "volunteer" or "admin"
+
+  try {
+    const result = await userCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { role } }
+    );
+    res.send(result);
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    res.status(500).send({ error: "Failed to update user role" });
+  }
+});
+
+
+
+
 
 
     // Send a ping to confirm a successful connection
