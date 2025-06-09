@@ -88,7 +88,7 @@ app.get("/all-users", async (req, res) => {
 
     app.get("/donation-requests", async (req, res) => {
       const status = req.query.status;
-      const query = { status: status };
+      const query = status ? { status } : {};
       const result = await donationRequestsCollection.find(query).toArray();
       res.send(result);
     });
@@ -108,6 +108,7 @@ app.get("/all-users", async (req, res) => {
       res.send(result);
     });
 
+    //status update to inprogress
     app.patch("/donation-requests/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -123,6 +124,40 @@ app.get("/all-users", async (req, res) => {
       );
       res.send(result);
     });
+
+    //update donation request
+    app.patch("/donation-requests/:id", async (req, res) => {
+  const id = req.params.id;
+  const updates = req.body;
+
+  try {
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $set: updates,
+    };
+
+    const result = await donationRequestsCollection.updateOne(filter, updateDoc);
+    res.send(result);
+  } catch (error) {
+    console.error("Error updating donation request:", error);
+    res.status(500).send({ error: "Failed to update donation request" });
+  }
+});
+
+// Delete donation request
+app.delete("/donation-requests/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const query = { _id: new ObjectId(id) };
+    const result = await donationRequestsCollection.deleteOne(query);
+    res.send(result);
+  } catch (error) {
+    console.error("Error deleting donation request:", error);
+    res.status(500).send({ error: "Failed to delete donation request" });
+  }
+});
+
     
     // Get donation requests by user email
 app.get("/my-donation-requests", async (req, res) => {
