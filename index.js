@@ -28,6 +28,7 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("donorNetworkDb").collection("users");
+    const blogCollection = client.db("donorNetworkDb").collection("blogs");
     const donationRequestsCollection = client
       .db("donorNetworkDb")
       .collection("donationRequests");
@@ -126,23 +127,26 @@ app.get("/all-users", async (req, res) => {
     });
 
     //update donation request
-    app.patch("/donation-requests/:id", async (req, res) => {
-  const id = req.params.id;
+app.patch("/donation-requests/:id", async (req, res) => {
+  const { id } = req.params;
   const updates = req.body;
 
   try {
-    const filter = { _id: new ObjectId(id) };
-    const updateDoc = {
-      $set: updates,
-    };
+    const result = await donationRequestsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updates }
+    );
 
-    const result = await donationRequestsCollection.updateOne(filter, updateDoc);
-    res.send(result);
-  } catch (error) {
-    console.error("Error updating donation request:", error);
-    res.status(500).send({ error: "Failed to update donation request" });
+    if (result.modifiedCount > 0) {
+      res.send({ message: "Updated successfully", success: true });
+    } else {
+      res.status(404).send({ message: "No document updated", success: false });
+    }
+  } catch (err) {
+    res.status(500).send({ message: "Update failed", error: err.message });
   }
 });
+;
 
 // Delete donation request
 app.delete("/donation-requests/:id", async (req, res) => {
@@ -202,6 +206,129 @@ app.patch("/users/:id/role", async (req, res) => {
     res.status(500).send({ error: "Failed to update user role" });
   }
 });
+
+// blog apis
+
+//add blog
+app.post("/blogs", async (req, res) => {
+  const { title, thumbnail, content,  author } = req.body;
+
+  const newBlog = {
+    title,
+    thumbnail,
+    content,
+    author,
+    status: "draft", // default
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  try {
+    const result = await blogCollection.insertOne(newBlog);
+    console.log('Blog created:', result);
+    res.send(result);
+  } catch (err) {
+    console.error("Error creating blog:", err);
+    res.status(500).send({ error: "Failed to create blog" });
+  }
+});
+// Get all blogs with status published
+app.get("/blogs", async (req, res) => {
+  const status = req.query.status;
+  const query = status ? { status } : {};
+
+  try {
+    const blogs = await blogCollection.find(query).toArray();
+    res.send(blogs);
+  } catch (err) {
+    console.error("Error fetching blogs:", err);
+    res.status(500).send({ error: "Failed to fetch blogs" });
+  }
+});
+
+
+// update blog status
+
+app.patch("/blogs/:id/status", async (req, res) => {
+  const { id } = req.params;
+  const { status, requesterEmail } = req.body; // should be "published" or "draft"
+
+  try {
+    // Check role
+    const user = await userCollection.findOne({ email: requesterEmail });
+    if (!user || user.role !== "admin") {
+      return res.status(403).send({ error: "Unauthorized" });
+    }
+
+    const result = await blogCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status, updatedAt: new Date() } }
+    );
+    res.send(result);
+  } catch (err) {
+    console.error("Error updating blog status:", err);
+    res.status(500).send({ error: "Failed to update status" });
+  }
+});
+//blog by id 
+app.get("/blogs/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const blog = await blogCollection.findOne({ _id: new ObjectId(id) });
+    if (!blog) {
+      return res.status(404).send({ error: "Blog not found" });
+    }
+    res.send(blog);
+  } catch (err) {
+    console.error("Error fetching blog:", err);
+    res.status(500).send({ error: "Failed to fetch blog" });
+  }
+});
+
+//update blog
+app.patch("/blogs/:id", async (req, res) => {
+  const { id } = req.params;
+  const { title, thumbnail, content, author } = req.body;
+
+  try {
+    const result = await blogCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          title,
+          thumbnail,
+          content,
+          author,
+          updatedAt: new Date(),
+        },
+      }
+    );
+    res.send(result);
+  } catch (err) {
+    console.error("Error updating blog:", err);
+    res.status(500).send({ error: "Failed to update blog" });
+  }
+});
+//delete blog
+app.delete("/blogs/:id", async (req, res) => {
+  const { id } = req.params;
+  const { requesterEmail } = req.body;
+
+  try {
+    const user = await userCollection.findOne({ email: requesterEmail });
+    // if (!user || user.role !== "admin") {
+    //   return res.status(403).send({ error: "Unauthorized" });
+    // }
+
+    const result = await blogCollection.deleteOne({ _id: new ObjectId(id) });
+    res.send(result);
+  } catch (err) {
+    console.error("Error deleting blog:", err);
+    res.status(500).send({ error: "Failed to delete blog" });
+  }
+});
+
 
 
 
