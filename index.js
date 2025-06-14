@@ -2,6 +2,9 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
+// stripe secret key
+const stripe = require("stripe")(process.env.stripe_sk);
+
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -32,6 +35,7 @@ async function run() {
     const donationRequestsCollection = client
       .db("donorNetworkDb")
       .collection("donationRequests");
+      const donationsCollection = client.db("donorNetworkDb").collection("donations");
 
     app.get("/users", async (req, res) => {
       const email = req.query.email;
@@ -329,6 +333,41 @@ app.delete("/blogs/:id", async (req, res) => {
   }
 });
 
+// Stripe payment intent creation
+// Add this near other routes
+app.post("/create-payment-intent", async (req, res) => {
+  const { amount } = req.body;
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: parseInt(amount * 100), // amount in cents
+      currency: "usd",
+      payment_method_types: ["card"],
+    });
+
+    res.send({
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (err) {
+    console.error("Error creating payment intent:", err);
+    res.status(500).send({ error: "Failed to create payment intent" });
+  }
+});
+
+// Store a donation
+app.post("/donations", async (req, res) => {
+  const donation = req.body;
+  const result = await donationsCollection.insertOne(donation);
+  res.send(result);
+});
+
+// Get all donations (or filter by email)
+app.get("/donations", async (req, res) => {
+  const email = req.query.email;
+  const query = email ? { email } : {};
+  const result = await donationsCollection.find(query).toArray();
+  res.send(result);
+});
 
 
 
