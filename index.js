@@ -131,7 +131,7 @@ app.get("/all-users", async (req, res) => {
     });
 
     //update donation request
-app.patch("/donation-requests/:id", async (req, res) => {
+app.patch("/donation-request-update/:id", async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
@@ -260,9 +260,7 @@ app.patch("/blogs/:id/status", async (req, res) => {
   try {
     // Check role
     const user = await userCollection.findOne({ email: requesterEmail });
-    if (!user || user.role !== "admin") {
-      return res.status(403).send({ error: "Unauthorized" });
-    }
+  
 
     const result = await blogCollection.updateOne(
       { _id: new ObjectId(id) },
@@ -369,6 +367,62 @@ app.get("/donations", async (req, res) => {
   res.send(result);
 });
 
+
+// search
+// Search donors API
+// Search users API (works with any role)
+app.get("/donors/search", async (req, res) => {
+  const { bloodGroup, districtId, upazilaId } = req.query;
+
+  try {
+    // Build the base query
+    const query = {
+      status: "active", // assuming you still want only active users
+      bloodGroup
+    };
+
+    // If district ID is provided, add to query
+    if (districtId) {
+      // Find users in this district to get the district name
+      const districtUser = await userCollection.findOne({ 
+        "district.id": districtId 
+      });
+      if (districtUser) {
+        query["district.name"] = districtUser.district.name;
+      }
+    }
+
+    // If upazila ID is provided, add to query
+    if (upazilaId) {
+      // Find users in this upazila to get the upazila name
+      const upazilaUser = await userCollection.findOne({ 
+        "upazila.id": upazilaId 
+      });
+      if (upazilaUser) {
+        query["upazila.name"] = upazilaUser.upazila.name;
+      }
+    }
+
+    const users = await userCollection
+      .find(query)
+      .project({ 
+        name: 1, 
+        bloodGroup: 1, 
+        district: 1, 
+        upazila: 1, 
+        phone: 1,
+        email: 1,
+        image: 1,
+        role: 1
+      })
+      .toArray();
+
+    res.send(users);
+  } catch (err) {
+    console.error("Error searching users:", err);
+    res.status(500).send({ error: "Failed to search users" });
+  }
+});
 
 
 
