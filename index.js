@@ -109,7 +109,12 @@ app.get("/all-users", async (req, res) => {
 
     app.post("/donation-requests", async (req, res) => {
       const info = req.body;
-      const result = await donationRequestsCollection.insertOne(info);
+        const newRequest = {
+    ...info,
+    status: "pending",
+    createdAt: new Date(), // ✅ add timestamp
+  };
+      const result = await donationRequestsCollection.insertOne(newRequest);
       res.send(result);
     });
 
@@ -423,6 +428,8 @@ app.get("/donors/search", async (req, res) => {
     res.status(500).send({ error: "Failed to search users" });
   }
 });
+
+
 
 
 
