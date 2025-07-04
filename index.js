@@ -5,11 +5,15 @@ const cors = require("cors");
 // stripe secret key
 const stripe = require("stripe")(process.env.stripe_sk);
 
-const port = process.env.PORT || 5000;
+const port = process.env.port || 5000;
 
 // middleware
 app.use(cors());
 app.use(express.json());
+app.listen(port, () => {
+  console.log(`Donor Network is running on port: ${port}`);
+});
+
 
 // database
 
@@ -432,8 +436,12 @@ app.get("/donors/search", async (req, res) => {
 
 
 
+app.get("/", (req, res) => {
+  res.send("Donor Network is running");
+});
 
 
+// Connect the client to the server (optional starting in v4.7)
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -447,10 +455,4 @@ app.get("/donors/search", async (req, res) => {
 }
 run().catch(console.dir);
 
-app.get("/", (req, res) => {
-  res.send("Donor Network is running");
-});
 
-app.listen(port, () => {
-  console.log(`Donor Network is running on port: ${port}`);
-});
