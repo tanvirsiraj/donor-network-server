@@ -31,7 +31,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const userCollection = client.db("donorNetworkDb").collection("users");
     const blogCollection = client.db("donorNetworkDb").collection("blogs");
@@ -376,7 +376,8 @@ async function run() {
     // search
     // Search donors API
     // Search users API (works with any role)
-    app.get("/donors/search", async (req, res) => {
+    /*     app.get("/donors/search", async (req, res) => {
+      console.error(req.query);
       const { bloodGroup, districtId, upazilaId } = req.query;
 
       try {
@@ -427,6 +428,48 @@ async function run() {
         console.error("Error searching users:", err);
         res.status(500).send({ error: "Failed to search users" });
       }
+    }); */
+
+    app.get("/donors/search", async (req, res) => {
+      console.error(req.query);
+      const { bloodGroup, district, upazila } = req.query; // Use district and upazila names
+
+      try {
+        // Build the base query
+        const query = {
+          status: "active", // assuming you still want only active users
+          bloodGroup,
+        };
+
+        // If district name is provided, add to query
+        if (district) {
+          query["districtName"] = district;
+        }
+
+        // If upazila name is provided, add to query
+        if (upazila) {
+          query["upazilaName"] = upazila;
+        }
+
+        const users = await userCollection
+          .find(query)
+          .project({
+            name: 1,
+            bloodGroup: 1,
+            districtName: 1,
+            upazilaName: 1,
+            phone: 1,
+            email: 1,
+            image: 1,
+            role: 1,
+          })
+          .toArray();
+
+        res.send(users);
+      } catch (err) {
+        console.error("Error searching users:", err);
+        res.status(500).send({ error: "Failed to search users" });
+      }
     });
 
     app.get("/", (req, res) => {
@@ -436,10 +479,10 @@ async function run() {
     // Connect the client to the server (optional starting in v4.7)
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
